@@ -1,0 +1,7 @@
+#NM DSM GitIgnore
+
+
+/data/final/preds/ #raster outputs
+
+
+
