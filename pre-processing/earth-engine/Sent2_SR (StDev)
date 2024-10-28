@@ -1,0 +1,276 @@
+//////// Code for processing Sentinel2 SR (standard deviation) data in Google Earth Engine with Java
+////// code needs a shapefile boundary of the NM DSM study area named "SA"
+
+
+
+// SENTINEL-2 SR IMAGE ACQUISITION
+// Authors:
+// Dave White - david.white@usda.gov
+// Last modified: 
+//    8/5/2021 **by Dave
+// Summary:
+//    Creates a simple, cloud-free Sentinel-2 image composite for an area of interest. 
+//    Output image includes 12 bands in Surface Reflectance and 11 spectral indicies.
+//    Code adapted from GEE Tutorial available here: 
+//    https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_CLOUD_PROBABILITY
+
+// 1. 
+// Select composite area and buffer distance. 
+var compositeArea = SA;  // area of interest
+
+// 2. 
+// Choose image dates over which to composite. 
+// Sentinel-2 data is only available after 2015-06-23
+// var startDate = ee.Date('2019-05-01');
+// var endDate = ee.Date('2019-07-01');
+
+// Create date range filters. Comment out unused lines!
+// var GrowingSeason15 = ee.Filter.date('2015-05-01','2015-07-01')
+// var GrowingSeason16 = ee.Filter.date('2016-05-01','2016-07-01')
+// var GrowingSeason17 = ee.Filter.date('2017-05-01','2017-07-01')
+// var GrowingSeason18 = ee.Filter.date('2018-05-01','2018-07-01')
+
+var GrowingSeason19 = ee.Filter.date('2019-05-01','2019-07-01')
+var GrowingSeason20 = ee.Filter.date('2020-05-01','2020-07-01')
+var GrowingSeason21 = ee.Filter.date('2021-05-01','2021-07-01')
+
+var GrowingSeasonsAll = ee.Filter.or(GrowingSeason19,GrowingSeason20,GrowingSeason21) //join filters //,  GrowingSeason16,GrowingSeason17,GrowingSeason18
+
+
+// 3. 
+// Choose cloudy probability. Indicates the maximum percentage of pixels identified as having clouds
+// max cloud probability
+var maxCloudProb = 85;
+
+
+// 4. 
+// Choose export parameters. 
+// Choose a descriptive name to apply to your output area.
+// Choose a coordinate system to use for your output projection. For more info- http://spatialreference.org/ref/epsg/ 
+// Choose a spatial resolution, in meters, to use for your output image. 
+//Export parameters
+var exportName = 'NM_Sen2_cpt'; // Give the study area a descriptive name. This name is used for output composite file names.
+var crs = 'EPSG:5070'; // EPSG number for output projection. 32651 = WGS84/UTM Zone 12N.  
+var res = 30; // export spatial resolution, in meters. Sentinel-2 image resolution is 10m for visible light and nir, and 20m for swir. 
+// Choose Standard Deviation or Median around line 90 *************
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// end user inputs. 
+// feel free to edit below to enhance your learning, or further tailor to your own applications!
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Function to mask clouds using the Sentinel-2 QA band
+ * @param {ee.Image} image Sentinel-2 image
+ * @return {ee.Image} cloud masked Sentinel-2 image
+ */
+function maskS2clouds(image) {
+  var qa = image.select('QA60'); //QA60
+
+  // Bits 10 and 11 are clouds and cirrus, respectively.
+  var cloudBitMask = 1 << 10;
+  var cirrusBitMask = 1 << 11;
+
+  // Both flags should be set to zero, indicating clear conditions.
+  var mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+      .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+
+  return image.updateMask(mask).divide(10000);
+}
+
+var dataset = ee.ImageCollection('COPERNICUS/S2_SR')
+                  // .filterDate('2020-05-01','2020-07-01')
+                  .filter(GrowingSeasonsAll)
+                  .filterBounds(compositeArea)
+                  // Pre-filter to get less cloudy granules.
+                  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20)) //20 mostly works
+                  .map(maskS2clouds);
+
+var visualization = {
+  min: 0.0,
+  max: 0.3,
+  bands: ['B4', 'B3', 'B2'],
+};
+
+// var dataset = ee.ImageCollection(dataset).median(); //FOR MEDIAN
+
+var dataset = ee.ImageCollection(dataset).reduce(ee.Reducer.stdDev()); //FOR STANDARD DEVIATION
+
+// and clip to area of interest
+var composite = dataset.clip(SA)
+
+Map.addLayer(SA);
+// Map.addLayer(composite, visualization, 'RGB');
+
+
+// // Dave's function to mask clouds
+// function maskClouds(img) {
+//   var clouds = ee.Image(img.get('cloud_mask')).select('probability');
+//   var isNotCloud = clouds.lt(maxCloudProb);
+//   return img.updateMask(isNotCloud);
+// }
+
+// The masks for the 10m bands sometimes do not exclude bad data at
+// scene edges, so we apply masks from the 20m and 60m bands as well.
+// Example asset that needs this operation:
+// COPERNICUS/S2_CLOUD_PROBABILITY/20190301T000239_20190301T000238_T55GDP
+// function maskEdges(s2_img) {
+//   return s2_img.updateMask(
+//       s2_img.select('B8A').mask().updateMask(s2_img.select('B9').mask()));
+// }
+
+
+// create viz params
+var rgbVis1 = {
+  min: 0.0,
+  max: 0.3,
+  bands: ['B4', 'B3', 'B2'],
+};
+
+// create viz params
+var rgbVis2 = {
+  min: 0.0,
+  max: 0.3,
+  bands: ['red', 'green', 'blue'],
+};
+
+// ///////////CPT: ADD MORE YEARS:
+// var collection1 = ee.ImageCollection('COPERNICUS/S2_SR') 
+//             // .filterDate('2016-05-01', '2016-07-01')
+//             .filter(GrowingSeasonsAll)
+//             .filterBounds(compositeArea);
+
+
+// //Clouds:
+// var collection5 = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY') 
+//             // .filterDate('2016-05-01', '2016-07-01')
+//             .filter(GrowingSeasonsAll)
+//             .filterBounds(compositeArea);
+
+
+/////////// Dave's script/2019
+// // get image filtered on date and aio
+// var s2Sr = ee.ImageCollection('COPERNICUS/S2_SR')
+//                       // .filterDate(startDate, endDate)
+//                       .filter(GrowingSeasonsAll)
+//                       .filterBounds(compositeArea);
+// // get cloud probaility layer
+// var s2Clouds = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY')
+//                       // .filterDate(startDate, endDate)
+//                       .filter(GrowingSeasonsAll)
+//                       .filterBounds(compositeArea);
+// // print(s2Sr)
+// // print(s2Clouds)
+
+// // Join S2 SR with cloud probability dataset to add cloud mask.
+// var s2SrWithCloudMask = ee.Join.saveFirst('cloud_mask').apply({
+//   primary: s2Sr,
+//   secondary: s2Clouds,
+//   condition:
+//       ee.Filter.equals({leftField: 'system:index', rightField: 'system:index'})
+// });
+
+// var s2CloudMasked =
+//     ee.ImageCollection(s2SrWithCloudMask).map(maskClouds).median();
+
+// // and clip to area of interest
+// var composite = s2CloudMasked.clip(SA)
+
+
+
+
+
+
+// //inspect
+// print(collection4);
+// print(collection8);
+// print(composite);
+// Map.addLayer(composite);
+// jj
+///////////////////////////////////////// Dave's OG code
+
+// create dictionary of original band names
+// only lists bands of interest
+var original_bands = ['B1_stdDev', 'B2_stdDev', 'B3_stdDev', 'B4_stdDev', 'B5_stdDev', 'B6_stdDev', 'B7_stdDev', 'B8_stdDev', 'B8A_stdDev', 'B9_stdDev', 'B11_stdDev', 'B12_stdDev'];
+//create dictionary of new band names
+var rename_bands = ['aerosols', 'blue', 'green', 'red', 're1', 're2', 're3', 'nir', 're4', 'waterVapor', 'swir1', 'swir2'];
+
+//rename bands in the filtered image
+var composite_renamed = composite.select(original_bands, rename_bands).toFloat();
+
+//spectral indicies
+// Calculate NDVI from composite
+var ndvi = composite_renamed.select('nir', 'red').normalizedDifference().rename('ndvi');
+var composite_renamed = composite_renamed.addBands(ndvi);
+//Gypsum Index
+var gyp = composite_renamed.select('swir1', 'swir2').normalizedDifference().rename('gypIdx');
+var composite_renamed = composite_renamed.addBands(gyp);
+//Carbonate Index
+var carb = composite_renamed.select('red', 'green').normalizedDifference().rename('carbIdx');
+var composite_renamed = composite_renamed.addBands(carb);
+//Ferrous Index
+var ferr = composite_renamed.select('red', 'swir2').normalizedDifference().rename('ferrIdx');
+var composite_renamed = composite_renamed.addBands(ferr);
+//fe oxide Indes
+var feox = composite_renamed.select('red', 'blue').normalizedDifference().rename('feoxIdx');
+var composite_renamed = composite_renamed.addBands(feox);
+//clay
+var clay = composite_renamed.select('swir2', 'swir1').normalizedDifference().rename('clayIdx');
+var composite_renamed = composite_renamed.addBands(clay);
+//Rock Index
+var rock = composite_renamed.select('swir1', 'green').normalizedDifference().rename('rockIdx');
+var composite_renamed = composite_renamed.addBands(rock);
+//Natric Index
+var nat = composite_renamed.select('swir1', 'nir').normalizedDifference().rename('natricIdx');
+var composite_renamed = composite_renamed.addBands(nat);
+//Water Index
+var wi = composite_renamed.select('green', 'nir').normalizedDifference().rename('waterIdx');
+var composite_renamed = composite_renamed.addBands(wi);
+// compute MSAVI
+// compute MSAVI2 using expression
+var msavi2 = composite.expression(
+  '(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED)) ) / 2', 
+  {
+    'NIR': composite_renamed.select('nir'), 
+    'RED': composite_renamed.select("red")
+  }
+).rename('msavi2');
+var composite_renamed = composite_renamed.addBands(msavi2);
+// bare soil index
+var bsi = composite_renamed.expression(
+  '(((red + swir1)-(nir + blue))/((red + swir1) + (nir + blue)))',
+  {
+    'red' : composite_renamed.select('red'),
+    'blue' : composite_renamed.select('blue'),
+    'swir1' : composite_renamed.select('swir1'),
+    'nir' : composite_renamed.select('nir'),
+  }).rename('bsi');
+var composite_renamed = composite_renamed.addBands(bsi);
+
+//var composite_renamed = composite_renamed.toFloat();
+
+
+// Display the composites.
+// Map.centerObject(compositeArea, 8);
+//print(composite)
+print(composite_renamed);
+
+//Choose a composite to export
+var toExport = composite_renamed;
+var fullName = exportName; // can be adapted to take image dates/years to further customize export name
+
+//display the image that will be exported
+Map.addLayer(toExport,rgbVis2,fullName);
+
+// // export image
+// // Export.image.toDrive(toExport,fullName, res, crs);//,"ImageAcquisition",fullName,null,res,crs,null,1e13);//SA.buffer(buffer_distance),res,crs,null,1e13);
+Export.image.toDrive({
+  image: toExport.toFloat(), //could change to integer here with .toInt() or .toInt64()
+  fileNamePrefix: 'NM_Sen2_stdev',
+  folder: 'Sent2_SR_stdev',
+  region: compositeArea,
+  scale: res,
+  maxPixels: 1e13, //1632877223 //
+})
+
+// gcloud config set app/use_deprecated_preparation True; //????????

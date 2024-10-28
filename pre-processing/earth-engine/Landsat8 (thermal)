@@ -1,0 +1,97 @@
+//////// Code for processing Landsat8 thermal data in Google Earth Engine with Java
+////// code needs a shapefile boundary of the NM DSM study area named "nmdsmbound"
+
+
+
+////September 2021
+////Charlotte Tierney
+
+var bounds = nmdsmbound
+
+// var GrowingSeason15 = ee.Filter.date('2015-05-01','2015-07-01') 
+// var GrowingSeason16 = ee.Filter.date('2016-05-01','2016-07-01')
+// var GrowingSeason17 = ee.Filter.date('2017-05-01','2017-07-01')
+// var GrowingSeason18 = ee.Filter.date('2018-05-01','2018-07-01')
+// var GrowingSeason19 = ee.Filter.date('2019-05-01','2019-07-01')
+// var GrowingSeason20 = ee.Filter.date('2020-05-01','2020-07-01')
+// var GrowingSeason21 = ee.Filter.date('2021-05-01','2021-07-01')
+
+// var GrowingSeasonsAll = ee.Filter.or(GrowingSeason15,GrowingSeason16,GrowingSeason17,GrowingSeason18,GrowingSeason19,GrowingSeason20,GrowingSeason21) //join filters //,  
+
+function maskL8sr(image) {
+  // Bits 3 and 5 are cloud shadow and cloud, respectively.
+  var cloudShadowBitMask = (1 << 3);
+  var cloudsBitMask = (1 << 5);
+  // Get the pixel QA band.
+  var qa = image.select('QA_PIXEL');
+  // Both flags should be set to zero, indicating clear conditions.
+  var mask = qa.bitwiseAnd(cloudShadowBitMask).eq(0)
+                 .and(qa.bitwiseAnd(cloudsBitMask).eq(0));
+  return image.updateMask(mask);
+}
+
+var dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+    .filterDate('2015-01-01', '2020-12-31')
+    // .filter(GrowingSeasonsAll) 
+    .filterBounds(bounds)
+    .map(maskL8sr);
+
+// Clip to study area
+// var dataset2 = dataset.clip(bounds);
+
+// function to clip edge by 15km 
+function erodeGeometry(dataset) {
+  return dataset.clip(dataset.geometry()).clipToCollection(bounds);
+}
+var dataset = dataset.map(erodeGeometry);
+
+// Applies scaling factors.
+function applyScaleFactors(dataset) {
+  // var opticalBands = dataset.select('SR_B.').multiply(0.0000275).add(-0.2);
+  var thermalBands = dataset.select('ST_B.*').multiply(0.00341802).add(149.0);
+  return dataset.addBands(thermalBands, null, true);
+              // .addBands(opticalBands, null, true);
+}
+
+var dataset = dataset.map(applyScaleFactors).select(['ST_B10','ST_DRAD','ST_QA','ST_EMIS','ST_EMSD','ST_TRAD','ST_URAD']);
+  // 'SR_B1','SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7']); //,'B10','B11'
+
+
+var dataset_med = ee.ImageCollection(dataset).median();
+var dataset_std = ee.ImageCollection(dataset).reduce(ee.Reducer.stdDev())
+
+// var visualization = {
+//   bands: ['SR_B4', 'SR_B3', 'SR_B2'],
+//   min: 0.0,
+//   max: 0.3,
+// };
+
+// var visualization_stdDev = {
+//   bands: ['SR_B4_stdDev', 'SR_B3_stdDev', 'SR_B2_stdDev'],
+//   min: 0.0,
+//   max: 0.3,
+// };
+
+// Map.setCenter(-114.2579, 38.9275, 8);
+Map.addLayer(bounds);
+Map.addLayer({eeObject:dataset_med, visParams:{min:0,max:3000}, name:'Median - Thermal'});
+Map.addLayer({eeObject:dataset_std, visParams:{min:0,max:3000}, name:'StdDev - Thermal'});
+
+// Export files
+Export.image.toDrive({
+        image:dataset_med,
+        description: 'L8_thermal_med',
+        folder: 'L8',
+        fileNamePrefix: 'L8_thermal_med',
+        scale: 30,
+        region: bounds.geometry().bounds(),
+        maxPixels: 1e13}); 
+
+Export.image.toDrive({
+        image:dataset_std,
+        description: 'L8_thermal_StD',
+        folder: 'L8',
+        fileNamePrefix: 'L8_thermal_StD',
+        scale: 30,
+        region: bounds.geometry().bounds(),
+        maxPixels: 1e13});

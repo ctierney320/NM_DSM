@@ -1,0 +1,5 @@
+## Pre-processed Pedon Data
+
+This folder contains data from the Kellogg Soil Survey Lab (KSSL), the USDA NRCS National Soil Infromation System (NASIS or national), and legacy data from archived soil survey efforts in New Mexico, processed by New Mexico State University from 2021-2023.
+
+The NMSU legacy data is the complete dataset. The KSSL and NASIS data has been processed to only include properties for this study. Code for downloading the KSSL and NASIS data and combining it for modeling is here: [PedonOrg]](https://code.usgs.gov/sbsc/duniway-lab/dart-dsm/nm-dsm/-/tree/main/pre-processing). The begining of every property's modeling code isolates that property's data from the [combined table](https://code.usgs.gov/sbsc/duniway-lab/dart-dsm/nm-dsm/-/blob/main/data/processed/pedons_ALL_est.csv).

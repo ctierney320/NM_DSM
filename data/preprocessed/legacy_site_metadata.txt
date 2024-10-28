@@ -1,0 +1,6 @@
+Site - Area tab
+
+utm_zone - 	The coordinate system divides the world into sixty north-south zones. They are 6 degrees of longitude wide
+utm_E - The east to west part of the coordiante system 
+utm_N	- The north to south part of the coordiante system 
+utm_ID	- Unique identifier created from joining the northing and easting coordinates. 

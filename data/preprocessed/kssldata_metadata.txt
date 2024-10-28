@@ -1,0 +1,1 @@
+KSSL dataset (kssldata.rds) was created by Charlotte Tierney (cptierney@usgs.gov) for the NM DSM project in October 2022 using the "PedonOrg_" codes. The data was taken from https://ncss-tech.github.io/lab-data-delivery/SDA.html . 

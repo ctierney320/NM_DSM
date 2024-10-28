@@ -1,0 +1,44 @@
+Metadata
+
+Pedon_ID - Pedon identifier that allows linkage back to the PDF field sheet. Not unique. 	
+UTM_ID	- Unique identifier created from joining the northing and easting coordinates. 
+H_number - Sequential horizon numbering. 	
+Horizon	- Horizon nomenclature 
+topDepth_cm - top of the horizon in centimeters. 
+bottomDepth_cm	- bottom of the horizon in centimetes
+dry_color- the color of the dry soil, using munsell soil color book 
+moist_color	- the color of the moist soil, using munsell soil color book 
+texture- The makeup of the soil, includes the portions of sand, silt, and clay. This is determined using the soil textural triangle
+text_modifier- The percentage of rocks in the soil matrix, can be gravelly, cobbly, stony,boluderly, channery, or flaggy. 	
+clay - how much clay is in the horizon in percentage, in correlation with the soil texture triangle
+sand- how much sand is in the horizon in percentage, in correlation with the soil texture  triangle
+RF	- Rock Fragments. how many rocks total are in a horizon in percentage
+Gravel	- rocks greater than 2 mm in size but less than 64 mm
+Cobbles	- rocks between 64 mm and 256 mm
+Stones	- rocks greater than 256 mm
+structure	- how the soil particle are assembled. 
+dry_cons	- dry_consistence. how hard is it to break the soil dry
+moist_cons	- mosit consistence. how hard is it to break the soil moist
+stickiness	- how sticky is the soil, how the soil adheres to other objects
+plasticity	- how plasticity is the soil; how deformed it can get without breaking.
+roots	- quantity, size, and location of the roots in each horizon
+pores - pores are air/water filled voids in soil. They are described with quantity, size, and shape	
+pH	- pH value of the soil. Measure in the labs
+EC	- electrical conductivity of the soil. Measure in the lab
+Eff. - Effervescence. The reponse of HCl in the form of gasous bubbles. It is used to test for carbonates 
+Boundary - The distinctness and topography of the horizons 
+CaCO3_meas - Calcium Carbonates measured in the lab	
+Gyp_meas - Gypsic measured in the lab
+CaCO3_vis - Visible Calcium Carbonates described in the horizon
+Gyp_vis	- Visible Gysum described in the horizon
+concent_kind_.	- accumulation of material during pedogenesis. Described kind, quantity, size, contrast, color, moisture state, shape, location, hardness, and boundary
+pv_kind	- ped and void kind. The type of coats/films, hypocoats, or stress features 
+pv_. - ped and void percentage. the percentage of the pv_kind	
+pv_distinct - ped and void distinctness. the relative extent to which a ped surface feature visuallly stands out
+pv_location	-ped and void location. where the features occurs within the horizon 
+notes- information that was not included in the colums above, but were written on the field sheet
+
+All horizon codes taken from: 
+Schoeneberger, P.J., D.A. Wysocki, E.C. Benham, and Soil Survey Staff. 2012. Field book for describing and sampling soils, Version 3.0. Natural Resources Conservation Service, National Soil Survey Center, Lincoln, NE. 
+
+

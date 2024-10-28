@@ -1,0 +1,1 @@
+NASIS dataset (nationalpedons.rds) was created by Charlotte Tierney (cptierney@usgs.gov) for the NM DSM project in October 2022 using the "PedonOrg_" codes. The data was taken from V:/PROJECTS/TRAVIS_NAUMAN/NM_DSM/Data_Spatial/Natl_Pedons/NASIS_all_component_horizon_match_SPC_ssurgo20.rds .  
